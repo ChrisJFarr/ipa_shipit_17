@@ -4,6 +4,7 @@ import json
 from get_job_failures import get_job_failures
 from random import randint
 from restart_job import restart_job
+from get_error import get_error
 
 access_key = "AKIAJI4ZDH6A2LF4PFLA"
 secret_access_key = "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"
@@ -12,49 +13,60 @@ region = "us-east-1"
 
 def test_for_messages_and_reply():
 
-    sqs = boto3.resource('sqs',
-                         aws_access_key_id=access_key,
-                         aws_secret_access_key=secret_access_key,
-                         region_name=region)
+    while True:
 
-    # Setting to The_Data_Warehouse queue
-    queue = sqs.Queue('https://sqs.us-east-1.amazonaws.com/732116115478/The_Data_Warehouse')
+        sqs = boto3.resource('sqs',
+                             aws_access_key_id=access_key,
+                             aws_secret_access_key=secret_access_key,
+                             region_name=region)
 
-    # Test for messages on loop
+        # Setting to The_Data_Warehouse queue
+        queue = sqs.Queue('https://sqs.us-east-1.amazonaws.com/732116115478/The_Data_Warehouse')
 
-    # When message exists, delete message
-    message = None
+        # Test for messages on loop
 
-    # Loop every 3-5 seconds while no messages exist
-    while message is None:
-        message = test_for_messages(queue)
+        # When message exists, delete message
+        message = None
 
-    message.delete()
+        # Loop every 3-5 seconds while no messages exist
+        while message is None:
+            message = test_for_messages(queue)
 
-    message_received = message.body
+        message.delete()
 
-    response_dict = json.loads(message_received)
-    response_name = response_dict["request"]["intent"]["name"]
+        message_received = message.body
 
-    reply = ["I don't know what you're talking about.",
-             "Could you try to speak up?",
-             "Truncated all IPDW....just kidding. What did you say?",
-             "Hmmm I'm not sure if I read you."]
+        response_dict = json.loads(message_received)
+        response_name = response_dict["request"]["intent"]["name"]
 
-    if response_name == "getJobFailures":
-        reply = get_job_failures()
-    elif response_name == "restartJob":
-        return response_dict
-        #parameter = response_dict['request']['intent']['slots']['job']['value']
-        #reply = restart_job(parameter)
+        reply = ["I don't know what you're talking about.",
+                 "Could you try to speak up?",
+                 "Truncated all IPDW....just kidding. What did you say?",
+                 "Hmmm I'm not sure if I read you."]
+        if response_name == "turnOff":
+            break
+        elif response_name == "getJobFailures":
+            reply = get_job_failures()
+        elif response_name == "restartJob":
+            try:
+                parameter = response_dict['request']['intent']['slots']['job']['value']
+                reply = restart_job(parameter)
+            except:
+                reply = "Hmmm there seems to be something wrong."
+        elif response_name == "getError":
+            try:
+                parameter = response_dict['request']['intent']['slots']['job']['value']
+                reply = get_error(parameter)
+            except:
+                reply = "Hmmm there seems to be something wrong."
 
-    # Respond with new message
-    if len(reply) == 4:
-        reply = reply[randint(0, 3)]
+        # Respond with new message
+        if len(reply) == 4:
+            reply = reply[randint(0, 3)]
 
-    queue.send_message(MessageBody=reply)
+        queue.send_message(MessageBody=reply)
 
-    return response_dict
+
 
 
 def test_for_messages(queue):
@@ -70,4 +82,3 @@ def test_for_messages(queue):
 
 
 response = test_for_messages_and_reply()
-
