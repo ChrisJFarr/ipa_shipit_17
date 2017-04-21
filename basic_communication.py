@@ -6,8 +6,7 @@ from random import randint
 from restart_job import restart_job
 from get_error import get_error
 
-access_key = "AKIAJI4ZDH6A2LF4PFLA"
-secret_access_key = "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"
+
 region = "us-east-1"
 
 
@@ -44,6 +43,8 @@ def test_for_messages_and_reply():
                  "Truncated all IPDW....just kidding. What did you say?",
                  "Hmmm I'm not sure if I read you."]
         if response_name == "turnOff":
+            reply = "Peace out, Ship It!"
+            queue.send_message(MessageBody=reply)
             break
         elif response_name == "getJobFailures":
             reply = get_job_failures()
@@ -81,4 +82,6 @@ def test_for_messages(queue):
     return message
 
 
-response = test_for_messages_and_reply()
+if __file__ == "__main__":
+    test_for_messages_and_reply()
+
